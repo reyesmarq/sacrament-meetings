@@ -1,6 +1,8 @@
+import Link from "next/link";
 import type { Meeting } from "@/lib/types";
 import { MEETING_TYPE_LABELS } from "@/lib/types";
 import PrintButton from "@/components/PrintButton";
+import DeleteMeetingForm from "@/components/DeleteMeetingForm";
 
 function formatDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", {
@@ -48,7 +50,16 @@ export default function MeetingDetail({ meeting }: MeetingDetailProps) {
             <dd>{meeting.conducting}</dd>
           </dl>
         </div>
-        <PrintButton />
+        <div className="print:hidden flex items-center gap-3">
+          <Link
+            href={`/meetings/${meeting.id}/edit`}
+            className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:border-white/20 dark:hover:bg-white/10 dark:focus-visible:outline-white"
+          >
+            Edit
+          </Link>
+          <DeleteMeetingForm id={meeting.id} />
+          <PrintButton />
+        </div>
       </header>
 
       {meeting.announcements.length > 0 && (

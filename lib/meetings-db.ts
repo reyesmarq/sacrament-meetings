@@ -1,227 +1,191 @@
+import { getDb } from "@/lib/db";
 import type { Meeting } from "@/lib/types";
 
-/**
- * In-memory data store standing in for a real database. Dates are seeded
- * around the app's "today" so the list naturally spans past and upcoming
- * Sundays for testing filtering, sorting, and the /meetings/current redirect.
- */
-const meetings: Meeting[] = [
-  {
-    id: "2026-08-30",
-    date: "2026-08-30",
-    type: "regular",
-    presiding: "Bishop David Hansen",
-    conducting: "David Hansen",
-    announcements: [
-      "Ward campout has been moved to September 19th at Willow Creek.",
-      "Temple night carpool signup sheet is in the foyer.",
-    ],
-    wardBusiness: ["Release: Sister Karen Lott as Primary chorister, with thanks."],
-    openingHymn: { title: "Come, Come, Ye Saints", number: 30 },
-    openingPrayer: "Emily Nakamura",
-    sacramentHymn: { title: "Reverently and Meekly Now", number: 185 },
-    speakers: [
-      { name: "Brother Tomas Diaz", topic: "Enduring to the end" },
-      { name: "Sister Priya Rao", topic: "The gift of the Holy Ghost" },
-    ],
-    musicalNumbers: [
-      { title: "I Need Thee Every Hour", performedBy: "Ward Choir" },
-    ],
-    closingHymn: { title: "Now Let Us Rejoice", number: 3 },
-    closingPrayer: "Marcus Webb",
-  },
-  {
-    id: "2026-09-06",
-    date: "2026-09-06",
-    type: "testimony",
-    presiding: "Bishop David Hansen",
-    conducting: "James Okafor",
-    announcements: [
-      "Fast offerings may be submitted online or in the tithing envelopes at the back of the chapel.",
-      "Youth conference registration closes this Friday.",
-    ],
-    wardBusiness: [
-      "Sustain: Brother Aaron Whitfield as second counselor in the Elders Quorum presidency.",
-      "Baby blessing: infant son of Michael and Rachel Sorensen.",
-    ],
-    openingHymn: { title: "Called to Serve", number: 249 },
-    openingPrayer: "Rachel Sorensen",
-    sacramentHymn: { title: "In Humility, Our Savior", number: 172 },
-    speakers: [],
-    musicalNumbers: [],
-    closingHymn: { title: "Do What Is Right", number: 237 },
-    closingPrayer: "Aaron Whitfield",
-  },
-  {
-    id: "2026-09-13",
-    date: "2026-09-13",
-    type: "regular",
-    presiding: "Bishop David Hansen",
-    conducting: "David Hansen",
-    announcements: [
-      "Ward campout is this Saturday at Willow Creek — sign up in the foyer.",
-      "Primary program practice moves to the chapel next week.",
-    ],
-    wardBusiness: [],
-    openingHymn: { title: "High on the Mountain Top", number: 5 },
-    openingPrayer: "Grace Lindqvist",
-    sacramentHymn: { title: "O Lord, My Rock and My Redeemer", number: 129 },
-    speakers: [
-      { name: "Sister Grace Lindqvist", topic: "Sabbath day worship" },
-      { name: "Bishop David Hansen", topic: "Ministering to one another" },
-    ],
-    musicalNumbers: [
-      { title: "Be Still, My Soul", performedBy: "The Whitfield Family" },
-    ],
-    closingHymn: { title: "Love One Another", number: 308 },
-    closingPrayer: "Tomas Diaz",
-  },
-  {
-    id: "2026-09-20",
-    date: "2026-09-20",
-    type: "regular",
-    presiding: "Bishop David Hansen",
-    conducting: "James Okafor",
-    announcements: [
-      "Ward conference is in three weeks — combined session at 11:00 a.m.",
-      "The clothing exchange in the cultural hall runs through Wednesday.",
-    ],
-    wardBusiness: [
-      "Release: Brother Marcus Webb as Ward Mission Leader, with thanks.",
-      "Sustain: Brother Michael Sorensen as Ward Mission Leader.",
-    ],
-    openingHymn: { title: "The Morning Breaks", number: 1 },
-    openingPrayer: "Michael Sorensen",
-    sacramentHymn: { title: "God Loved Us, So He Sent His Son", number: 187 },
-    speakers: [
-      { name: "Elder James Okafor", topic: "The Atonement of Jesus Christ" },
-      { name: "Sister Emily Nakamura", topic: "Family history and temple work" },
-    ],
-    musicalNumbers: [
-      { title: "I Stand All Amazed", performedBy: "Priya Rao (vocal solo)" },
-    ],
-    closingHymn: { title: "Let Us All Press On", number: 243 },
-    closingPrayer: "Priya Rao",
-  },
-  {
-    id: "2026-09-27",
-    date: "2026-09-27",
-    type: "regular",
-    presiding: "Bishop David Hansen",
-    conducting: "David Hansen",
-    announcements: [
-      "General Conference is next weekend — viewing parties will be held at the church for those without access at home.",
-    ],
-    wardBusiness: ["Baby blessing: infant daughter of Aaron and Jenna Whitfield."],
-    openingHymn: { title: "Praise to the Man", number: 27 },
-    openingPrayer: "Jenna Whitfield",
-    sacramentHymn: { title: "Jesus, Once of Humble Birth", number: 196 },
-    speakers: [
-      { name: "Brother Marcus Webb", topic: "Preparing for General Conference" },
-    ],
-    musicalNumbers: [
-      { title: "Consider the Lilies", performedBy: "Ward Choir" },
-    ],
-    closingHymn: { title: "We Thank Thee, O God, for a Prophet", number: 19 },
-    closingPrayer: "James Okafor",
-  },
-  {
-    id: "2026-10-04",
-    date: "2026-10-04",
-    type: "general",
-    presiding: "The First Presidency",
-    conducting: "President of the Church",
-    announcements: [
-      "All sessions are broadcast — check local listings or the Gospel Library app for viewing times.",
-      "There is no local ward meeting held on General Conference weekend.",
-    ],
-    wardBusiness: [],
-    openingHymn: { title: "Conference session hymn (varies by session)", number: 0 },
-    openingPrayer: "Assigned General Authority",
-    sacramentHymn: { title: "Not observed during General Conference sessions", number: 0 },
-    speakers: [
-      {
-        name: "Various General Authorities and General Officers",
-        topic: "General Conference addresses",
-      },
-    ],
-    musicalNumbers: [
-      { title: "Selected hymns", performedBy: "The Tabernacle Choir at Temple Square" },
-    ],
-    closingHymn: { title: "Conference session hymn (varies by session)", number: 0 },
-    closingPrayer: "Assigned General Authority",
-  },
-  {
-    id: "2026-10-11",
-    date: "2026-10-11",
-    type: "stake",
-    presiding: "President Daniel Okonkwo",
-    conducting: "President Daniel Okonkwo",
-    announcements: [
-      "Combined stake conference session begins at 10:00 a.m. in the stake center.",
-      "Broadcast to the ward building overflow room for those who prefer a closer parking option.",
-    ],
-    wardBusiness: [
-      "Sustain: new stake Young Women presidency.",
-    ],
-    openingHymn: { title: "Come, Thou Fount of Every Blessing", number: 194 },
-    openingPrayer: "Stake Relief Society President",
-    sacramentHymn: { title: "As the Dew from Heaven Distilling", number: 139 },
-    speakers: [
-      { name: "President Daniel Okonkwo", topic: "Unity in the stake" },
-      { name: "Sister Lian Zhao, Stake Relief Society President", topic: "Charity never faileth" },
-    ],
-    musicalNumbers: [
-      { title: "How Firm a Foundation", performedBy: "Combined Stake Choir" },
-    ],
-    closingHymn: { title: "Onward, Christian Soldiers", number: 246 },
-    closingPrayer: "Stake Young Men President",
-  },
-  {
-    id: "2026-10-18",
-    date: "2026-10-18",
-    type: "regular",
-    presiding: "Bishop David Hansen",
-    conducting: "David Hansen",
-    announcements: [
-      "Trunk-or-treat signups are open in the foyer.",
-      "Missionary correspondence letters are due to the Relief Society table by Sunday.",
-    ],
-    wardBusiness: [],
-    openingHymn: { title: "Redeemer of Israel", number: 6 },
-    openingPrayer: "Karen Lott",
-    sacramentHymn: { title: "While of These Emblems We Partake", number: 173 },
-    speakers: [
-      { name: "Brother Aaron Whitfield", topic: "Faith in Jesus Christ" },
-    ],
-    musicalNumbers: [
-      { title: "Lead, Kindly Light", performedBy: "Grace Lindqvist (vocal solo)" },
-    ],
-    closingHymn: { title: "Israel, Israel, God Is Calling", number: 7 },
-    closingPrayer: "David Hansen",
-  },
-];
+interface MeetingRow {
+  id: string;
+  date: string;
+  type: Meeting["type"];
+  presiding: string;
+  conducting: string;
+  announcements: string;
+  wardBusiness: string;
+  openingHymnTitle: string;
+  openingHymnNumber: number;
+  openingPrayer: string;
+  sacramentHymnTitle: string;
+  sacramentHymnNumber: number;
+  speakers: string;
+  musicalNumbers: string;
+  closingHymnTitle: string;
+  closingHymnNumber: number;
+  closingPrayer: string;
+}
+
+function rowToMeeting(row: MeetingRow): Meeting {
+  return {
+    id: row.id,
+    date: row.date,
+    type: row.type,
+    presiding: row.presiding,
+    conducting: row.conducting,
+    announcements: JSON.parse(row.announcements),
+    wardBusiness: JSON.parse(row.wardBusiness),
+    openingHymn: { title: row.openingHymnTitle, number: row.openingHymnNumber },
+    openingPrayer: row.openingPrayer,
+    sacramentHymn: { title: row.sacramentHymnTitle, number: row.sacramentHymnNumber },
+    speakers: JSON.parse(row.speakers),
+    musicalNumbers: JSON.parse(row.musicalNumbers),
+    closingHymn: { title: row.closingHymnTitle, number: row.closingHymnNumber },
+    closingPrayer: row.closingPrayer,
+  };
+}
+
+/** Input shape accepted by createMeetingRecord/updateMeetingRecord, already validated by the caller. */
+export type MeetingInput = Omit<Meeting, "id"> & { id?: string };
 
 export function getAllMeetings(date?: string): Meeting[] {
-  const filtered = date ? meetings.filter((meeting) => meeting.date === date) : meetings;
-  return [...filtered].sort((a, b) => a.date.localeCompare(b.date));
+  try {
+    const db = getDb();
+    const rows = date
+      ? (db.prepare("SELECT * FROM meetings WHERE date = ?").all(date) as MeetingRow[])
+      : (db.prepare("SELECT * FROM meetings").all() as MeetingRow[]);
+    return rows.map(rowToMeeting).sort((a, b) => a.date.localeCompare(b.date));
+  } catch (error) {
+    console.error("getAllMeetings failed:", error);
+    throw new Error("Unable to load meetings right now. Please try again.");
+  }
 }
 
 export function getMeetingById(id: string): Meeting | undefined {
-  return meetings.find((meeting) => meeting.id === id);
+  try {
+    const db = getDb();
+    const row = db.prepare("SELECT * FROM meetings WHERE id = ?").get(id) as
+      | MeetingRow
+      | undefined;
+    return row ? rowToMeeting(row) : undefined;
+  } catch (error) {
+    console.error(`getMeetingById(${id}) failed:`, error);
+    throw new Error("Unable to load that meeting right now. Please try again.");
+  }
 }
 
 /**
  * The meeting the ward is actively planning for: the soonest Sunday that
  * hasn't passed yet, falling back to the most recently held meeting when
- * every seeded meeting is in the past.
+ * every stored meeting is in the past. Uses the server's local calendar date
+ * (not `toISOString()`, which converts to UTC first and can roll the date
+ * back or forward a day on a non-UTC server).
  */
 export function getCurrentMeeting(referenceDate: Date = new Date()): Meeting | undefined {
-  const todayIso = referenceDate.toISOString().slice(0, 10);
-  const upcoming = getAllMeetings().filter((meeting) => meeting.date >= todayIso);
+  const year = referenceDate.getFullYear();
+  const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
+  const day = String(referenceDate.getDate()).padStart(2, "0");
+  const todayIso = `${year}-${month}-${day}`;
+
+  const all = getAllMeetings();
+  const upcoming = all.filter((meeting) => meeting.date >= todayIso);
   if (upcoming.length > 0) {
     return upcoming[0];
   }
-  const all = getAllMeetings();
   return all[all.length - 1];
+}
+
+export function createMeetingRecord(id: string, input: MeetingInput): void {
+  try {
+    const db = getDb();
+    db.prepare(
+      `INSERT INTO meetings (
+        id, date, type, presiding, conducting, announcements, wardBusiness,
+        openingHymnTitle, openingHymnNumber, openingPrayer,
+        sacramentHymnTitle, sacramentHymnNumber,
+        speakers, musicalNumbers,
+        closingHymnTitle, closingHymnNumber, closingPrayer
+      ) VALUES (
+        @id, @date, @type, @presiding, @conducting, @announcements, @wardBusiness,
+        @openingHymnTitle, @openingHymnNumber, @openingPrayer,
+        @sacramentHymnTitle, @sacramentHymnNumber,
+        @speakers, @musicalNumbers,
+        @closingHymnTitle, @closingHymnNumber, @closingPrayer
+      )`
+    ).run({
+      id,
+      date: input.date,
+      type: input.type,
+      presiding: input.presiding,
+      conducting: input.conducting,
+      announcements: JSON.stringify(input.announcements),
+      wardBusiness: JSON.stringify(input.wardBusiness),
+      openingHymnTitle: input.openingHymn.title,
+      openingHymnNumber: input.openingHymn.number,
+      openingPrayer: input.openingPrayer,
+      sacramentHymnTitle: input.sacramentHymn.title,
+      sacramentHymnNumber: input.sacramentHymn.number,
+      speakers: JSON.stringify(input.speakers),
+      musicalNumbers: JSON.stringify(input.musicalNumbers),
+      closingHymnTitle: input.closingHymn.title,
+      closingHymnNumber: input.closingHymn.number,
+      closingPrayer: input.closingPrayer,
+    });
+  } catch (error) {
+    console.error(`createMeetingRecord(${id}) failed:`, error);
+    if (error instanceof Error && error.message.includes("UNIQUE constraint")) {
+      throw new Error(`A meeting already exists for ${id}. Edit it instead, or pick a different date.`);
+    }
+    throw new Error("Unable to save this meeting right now. Please try again.");
+  }
+}
+
+export function updateMeetingRecord(id: string, input: MeetingInput): void {
+  try {
+    const db = getDb();
+    const result = db
+      .prepare(
+        `UPDATE meetings SET
+          date = @date, type = @type, presiding = @presiding, conducting = @conducting,
+          announcements = @announcements, wardBusiness = @wardBusiness,
+          openingHymnTitle = @openingHymnTitle, openingHymnNumber = @openingHymnNumber,
+          openingPrayer = @openingPrayer,
+          sacramentHymnTitle = @sacramentHymnTitle, sacramentHymnNumber = @sacramentHymnNumber,
+          speakers = @speakers, musicalNumbers = @musicalNumbers,
+          closingHymnTitle = @closingHymnTitle, closingHymnNumber = @closingHymnNumber,
+          closingPrayer = @closingPrayer
+        WHERE id = @id`
+      )
+      .run({
+        id,
+        date: input.date,
+        type: input.type,
+        presiding: input.presiding,
+        conducting: input.conducting,
+        announcements: JSON.stringify(input.announcements),
+        wardBusiness: JSON.stringify(input.wardBusiness),
+        openingHymnTitle: input.openingHymn.title,
+        openingHymnNumber: input.openingHymn.number,
+        openingPrayer: input.openingPrayer,
+        sacramentHymnTitle: input.sacramentHymn.title,
+        sacramentHymnNumber: input.sacramentHymn.number,
+        speakers: JSON.stringify(input.speakers),
+        musicalNumbers: JSON.stringify(input.musicalNumbers),
+        closingHymnTitle: input.closingHymn.title,
+        closingHymnNumber: input.closingHymn.number,
+        closingPrayer: input.closingPrayer,
+      });
+
+    if (result.changes === 0) {
+      throw new Error(`No meeting found with id "${id}".`);
+    }
+  } catch (error) {
+    console.error(`updateMeetingRecord(${id}) failed:`, error);
+    throw new Error("Unable to update this meeting right now. Please try again.");
+  }
+}
+
+export function deleteMeetingRecord(id: string): void {
+  try {
+    const db = getDb();
+    db.prepare("DELETE FROM meetings WHERE id = ?").run(id);
+  } catch (error) {
+    console.error(`deleteMeetingRecord(${id}) failed:`, error);
+    throw new Error("Unable to delete this meeting right now. Please try again.");
+  }
 }

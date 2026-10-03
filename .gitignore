@@ -36,6 +36,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local sqlite database (seeded automatically from lib/seed-meetings.ts)
+/.data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
