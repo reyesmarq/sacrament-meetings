@@ -14,10 +14,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Vercel sets VERCEL_PROJECT_PRODUCTION_URL to the stable production domain
+// (no per-deployment hash) in every environment; fall back to localhost.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Riverside Ward | Sacrament Meeting Planner",
   description:
     "Plan, view, and print Riverside Ward sacrament meeting agendas. Built with the Next.js App Router for WDD 430.",
+  openGraph: {
+    title: "Riverside Ward | Sacrament Meeting Planner",
+    description:
+      "Plan, view, and print Riverside Ward sacrament meeting agendas.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

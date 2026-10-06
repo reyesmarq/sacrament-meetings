@@ -25,20 +25,25 @@ Open <http://localhost:3000>.
 
 ```
 app/
-  layout.tsx              Root layout — Header, Footer, page chrome
+  layout.tsx              Root layout — Header, Footer, page chrome, site metadata + metadataBase
+  opengraph-image.tsx     Generated OG image (next/og) shared by every route that doesn't override it
   page.tsx                Landing page — links out + "coming up" preview
+  login/page.tsx          Bishopric sign-in form, honors ?callbackUrl=
+  api/auth/[...nextauth]/route.ts  Auth.js route handler (GET/POST)
   api/meetings/route.ts          GET all meetings, optional ?date= filter
   api/meetings/[id]/route.ts     GET one meeting — 400 invalid id, 404 missing
   meetings/layout.tsx     Shared "back to home" chrome for the meetings section
   meetings/loading.tsx    Route-level loading skeleton
   meetings/error.tsx      Error boundary for the /meetings section — "Try Again" button
-  meetings/page.tsx       List all meetings, newest first, + "New Meeting" entry point
-  meetings/new/page.tsx   Create-meeting form
-  meetings/[id]/page.tsx  Full agenda for one meeting, with Edit/Delete actions
+  meetings/page.tsx       List all meetings, newest first, + "New Meeting" entry point (bishopric only)
+  meetings/new/page.tsx   Create-meeting form — protected, redirects to /login if signed out
+  meetings/[id]/page.tsx  Full agenda for one meeting, with Edit/Delete actions (bishopric only)
   meetings/[id]/not-found.tsx  Shown when an id doesn't match any meeting
-  meetings/[id]/edit/page.tsx       Edit-meeting form, 404s via notFound() if missing
+  meetings/[id]/edit/page.tsx       Edit-meeting form — protected, 404s via notFound() if missing
   meetings/[id]/edit/not-found.tsx  Dedicated "can't edit" message for a missing id
   meetings/current/page.tsx    Redirects to the nearest upcoming Sunday
+auth.ts                  Auth.js (NextAuth v5) config — Credentials provider, /login as the sign-in page
+proxy.ts                 Optimistic redirect-to-login for /meetings/new and /meetings/[id]/edit
 lib/
   types.ts            Meeting, Hymn, Speaker, MusicalNumber types
   db.ts               SQLite connection (seeds itself from seed-meetings.ts on first run)
@@ -46,10 +51,13 @@ lib/
   meetings-db.ts      getAllMeetings/getMeetingById/getCurrentMeeting + create/update/delete, all backed by real SQL
   validation.ts        Zod MeetingFormSchema + MeetingFormState shape shared by the form and actions
   actions.ts           'use server' createMeeting/updateMeeting/deleteMeeting Server Actions
+  auth-guard.ts         requireBishopric() — secure session check used by protected pages + actions
+  auth-actions.ts       'use server' authenticate/signOutAction wrapping Auth.js signIn/signOut
 components/
   Header.tsx, Footer.tsx, NavLinks.tsx   Site chrome
-  MeetingCard.tsx       Summary card used in the meetings list, + Edit/Delete
-  MeetingDetail.tsx     Full agenda layout used on the detail page, + Edit/Delete
+  SignInForm.tsx, SignOutButton.tsx      Auth UI — useActionState form / plain Server Action form
+  MeetingCard.tsx       Summary card used in the meetings list, + Edit/Delete (canManage prop)
+  MeetingDetail.tsx     Full agenda layout used on the detail page, + Edit/Delete (canManage prop)
   MeetingForm.tsx       Shared create/edit form — useActionState, inline field errors
   DeleteMeetingForm.tsx Small form + confirm() wrapping the delete Server Action
   PrintButton.tsx       Client component wrapping window.print()
@@ -157,3 +165,71 @@ handling. It also drove the running app end-to-end in a real headless browser
 what surfaced the uncontrolled-form-reset bug described above — `npm run
 build`/`lint` stayed green the entire time that bug existed, so the
 browser-level check was the only thing that caught it.
+
+## Week 05: authentication and metadata
+
+- **Authentication** ([`auth.ts`](auth.ts)): Auth.js (`next-auth@5`) with a
+  single Credentials provider — one shared bishopric login, checked against
+  `BISHOPRIC_USERNAME`/`BISHOPRIC_PASSWORD` env vars, no user table or
+  password hashing infrastructure for this assignment's scope (see the
+  env-var trade-off below). Session is a signed JWT (`AUTH_SECRET`), no
+  database adapter.
+- **Protected routes**: `/meetings/new` and `/meetings/[id]/edit` are gated
+  two ways, per the [Next.js auth guide](node_modules/next/dist/docs/01-app/02-guides/authentication.md)'s
+  recommendation not to rely on the proxy alone —
+  - `proxy.ts` does an *optimistic* cookie check and redirects to
+    `/login?callbackUrl=...` before the page even renders.
+  - Each page also calls `requireBishopric()` ([`lib/auth-guard.ts`](lib/auth-guard.ts))
+    server-side, and `createMeeting`/`updateMeeting`/`deleteMeeting`
+    ([`lib/actions.ts`](lib/actions.ts)) call it too — Server Actions can be
+    invoked directly and never go through `proxy.ts`, so they need their own
+    check.
+  - The Edit/Delete links and the "+ New Meeting" button are also hidden from
+    signed-out visitors (`canManage` prop on `MeetingCard`/`MeetingDetail`),
+    so the UI doesn't dangle controls a visitor can't use — those are a UX
+    nicety on top of the two checks above, not a substitute for them.
+- **Metadata**: root `layout.tsx` already had a site-level title/description
+  (added Week 02); this week added `metadataBase` (resolved from Vercel's
+  `VERCEL_PROJECT_PRODUCTION_URL` so it isn't hardcoded) and an `openGraph`
+  block, plus a generated `app/opengraph-image.tsx` (`next/og`) so every page
+  gets a real OG image instead of none. Route-specific descriptions were
+  added to `/meetings` and `/meetings/[id]` (titles already existed on the
+  create/edit pages from Week 03/04).
+
+### Challenge: Next.js 16 renamed `middleware.ts` to `proxy.ts`
+
+This project pins Next.js 16, which is newer than most Auth.js
+documentation and tutorials (they still show `middleware.ts`). Checking the
+docs bundled in `node_modules/next/dist/docs` before writing anything (per
+`AGENTS.md`) showed `middleware.js` is deprecated in 16 — same behavior,
+renamed file and export (`proxy.ts`, `export function proxy`). Using the old
+filename would have silently done nothing (no error, no redirect) rather
+than failing loudly, which would have been a much more confusing bug to
+chase down later.
+
+### Trade-off: a single shared credential instead of a user table
+
+The bishopric functionally shares one login for this app (there's no
+per-member identity model anywhere else in the schema), so `authorize()`
+compares against two env vars rather than adding a `users` table, hashing,
+and a signup flow. That mirrors the SQLite trade-off from Week 04: build
+what the assignment is actually testing (a working protected route and a
+real sign-in/sign-out flow) without standing up infrastructure the app
+doesn't otherwise need. `AUTH_SECRET`/`BISHOPRIC_USERNAME`/`BISHOPRIC_PASSWORD`
+are documented in `.env.example` and must be set in Vercel's Project
+Settings for the deployed app (they're gitignored like all `.env*` files).
+
+### AI usage summary
+
+Used Claude Code for the Week 05 implementation: reading the bundled
+Next.js 16 docs first (confirmed the `proxy.ts` rename and the
+optimistic-vs-secure auth check guidance), wiring up Auth.js (provider,
+route handler, `proxy.ts`, the login page/form, sign-out button), adding the
+`requireBishopric()` checks to the protected pages and Server Actions, and
+threading the `canManage` prop through the meeting list/detail components.
+It also added the OG image and route metadata, then ran `npm run lint` and
+`npm run build` and drove the app end-to-end in a real headless browser
+(`playwright-cli`): wrong-credentials error message, successful sign-in,
+protected-route redirect while signed out with `callbackUrl` preserved,
+sign-out, and verified the rendered `<title>`/`<meta name="description">`
+tags and the OG image's content type/dimensions via `curl`.

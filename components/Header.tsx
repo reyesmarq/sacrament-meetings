@@ -1,8 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import NavLinks from "@/components/NavLinks";
+import SignOutButton from "@/components/SignOutButton";
+import { auth } from "@/auth";
 
-export default function Header() {
+export default async function Header() {
+  const session = await auth();
+
   return (
     <header className="print:hidden border-b border-black/10 dark:border-white/15">
       <nav
@@ -20,7 +24,16 @@ export default function Header() {
           Riverside Ward
         </Link>
 
-        <NavLinks />
+        <div className="flex items-center gap-6 text-sm">
+          <NavLinks />
+          {session ? (
+            <SignOutButton />
+          ) : (
+            <Link href="/login" className="hover:underline underline-offset-4">
+              Sign in
+            </Link>
+          )}
+        </div>
       </nav>
     </header>
   );

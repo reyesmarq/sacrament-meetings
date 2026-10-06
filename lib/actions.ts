@@ -13,6 +13,7 @@ import {
   toMeetingInput,
   type MeetingFormState,
 } from "@/lib/validation";
+import { requireBishopric } from "@/lib/auth-guard";
 
 const FORM_FIELD_NAMES = [
   "date",
@@ -93,6 +94,8 @@ export async function createMeeting(
   prevState: MeetingFormState,
   formData: FormData
 ): Promise<MeetingFormState> {
+  await requireBishopric();
+
   const parsed = parseMeetingForm(prevState, formData);
   if (isFormState(parsed)) {
     return parsed;
@@ -118,6 +121,8 @@ export async function updateMeeting(
   prevState: MeetingFormState,
   formData: FormData
 ): Promise<MeetingFormState> {
+  await requireBishopric();
+
   const parsed = parseMeetingForm(prevState, formData);
   if (isFormState(parsed)) {
     return parsed;
@@ -146,6 +151,8 @@ export async function updateMeeting(
 }
 
 export async function deleteMeeting(id: string): Promise<void> {
+  await requireBishopric();
+
   if (!getMeetingById(id)) {
     throw new Error(`No meeting found with id "${id}".`);
   }

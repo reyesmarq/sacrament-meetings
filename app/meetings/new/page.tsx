@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import MeetingForm from "@/components/MeetingForm";
 import { createMeeting } from "@/lib/actions";
+import { requireBishopric } from "@/lib/auth-guard";
 
 export const metadata: Metadata = {
   title: "New Meeting | Riverside Ward",
 };
 
-export default function NewMeetingPage() {
+export default async function NewMeetingPage() {
+  await requireBishopric("/login?callbackUrl=/meetings/new");
+
   return (
     <section>
       <h1 className="text-2xl font-semibold tracking-tight">Plan a New Meeting</h1>

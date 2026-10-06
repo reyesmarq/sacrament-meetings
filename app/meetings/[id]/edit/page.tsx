@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getMeetingById } from "@/lib/meetings-db";
 import { updateMeeting } from "@/lib/actions";
 import MeetingForm from "@/components/MeetingForm";
+import { requireBishopric } from "@/lib/auth-guard";
 
 export async function generateMetadata(
   props: PageProps<"/meetings/[id]/edit">
@@ -16,6 +17,7 @@ export async function generateMetadata(
 
 export default async function EditMeetingPage(props: PageProps<"/meetings/[id]/edit">) {
   const { id } = await props.params;
+  await requireBishopric(`/login?callbackUrl=/meetings/${id}/edit`);
   const meeting = getMeetingById(id);
 
   if (!meeting) {

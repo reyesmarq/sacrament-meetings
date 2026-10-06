@@ -14,9 +14,10 @@ function formatDate(iso: string): string {
 
 export interface MeetingCardProps {
   meeting: Meeting;
+  canManage: boolean;
 }
 
-export default function MeetingCard({ meeting }: MeetingCardProps) {
+export default function MeetingCard({ meeting, canManage }: MeetingCardProps) {
   return (
     <div className="rounded-lg border border-black/10 p-5 transition hover:border-black/30 dark:border-white/15 dark:hover:border-white/40">
       <Link
@@ -33,15 +34,17 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
           Presiding: {meeting.presiding}
         </p>
       </Link>
-      <div className="mt-4 flex items-center gap-3 border-t border-black/5 pt-3 dark:border-white/10">
-        <Link
-          href={`/meetings/${meeting.id}/edit`}
-          className="text-sm font-medium hover:underline"
-        >
-          Edit
-        </Link>
-        <DeleteMeetingForm id={meeting.id} />
-      </div>
+      {canManage && (
+        <div className="mt-4 flex items-center gap-3 border-t border-black/5 pt-3 dark:border-white/10">
+          <Link
+            href={`/meetings/${meeting.id}/edit`}
+            className="text-sm font-medium hover:underline"
+          >
+            Edit
+          </Link>
+          <DeleteMeetingForm id={meeting.id} />
+        </div>
+      )}
     </div>
   );
 }
